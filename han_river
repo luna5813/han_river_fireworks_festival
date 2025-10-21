@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>불꽃축제 명당 지도 (OSM 참여형, 서울 전용)</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Leaflet.Draw (사용자 마커 추가용) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg,#1e3c72,#2a5298); color:#222; }
+        .header { background: linear-gradient(135deg,#ff6b6b,#ee5a6f); color:#fff; padding:18px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.25); }
+        .header h1 { margin-bottom:6px; font-size:26px; }
+        #map { width:100vw; height: calc(100vh - 96px); }
+
+        .legend { position: fixed; bottom:30px; left:30px; background:#fff; padding:16px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.25); z-index:1000; max-width:320px; }
+        .legend h3 { margin:0 0 10px 0; color:#ff6b6b; }
+        .legend-item { display:flex; align-items:center; gap:10px; margin:8px 0; font-size:14px; }
+        .legend-icon { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px; }
+
+        .filter-panel { position: fixed; top:110px; right:20px; background:#fff; padding:12px; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.18); z-index:500; max-width:250px; }
+        .filter-panel label { display:block; margin:6px 0; font-size:14px; }
+        .quick-nav-box { background:#fff; padding:10px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.15); z-index:500; }
+        .custom-popup .leaflet-popup-content-wrapper { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; border-radius:12px; }
+        .custom-popup .leaflet-popup-content { margin:12px; font-size:14px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🎆 불꽃축제 명당 지도 (OSM 참여형, 서울 전용) 🎇</h1>
+    <p>OpenStreetMap 참여 기능을 통해 명당을 제안하거나 OSM 편집기에서 직접 편집할 수 있습니다.</p>
+</div>
+
+<div id="map"></div>
+
+<div class="legend">
+    <h3>🎯 명당 등급</h3>
+    <div class="legend-item"><div class="legend-icon" style="background:#ff6b6b">⭐</div><div><strong>최고 명당</strong> - 시야 최상</div></div>
+    <div class="legend-item"><div class="legend-icon" style="background:#4facfe">👍</div><div><strong>우수 명당</strong> - 접근 용이</div></div>
+    <div class="legend-item"><div class="legend-icon" style="background:#43e97b">📍</div><div><strong>일반 명당</strong></div></div>
+    <div class="legend-item"><div class="legend-icon" style="background:#fa709a">🎪</div><div><strong>축제 중심</strong> - 불꽃 발사 위치</div></div>
+    <div class="legend-item"><div class="legend-icon" style="background:#7f8c8d">✚</div><div><strong>사용자 제안</strong> - OSM으로 제안/편집</div></div>
+</div>
+
+<div class="filter-panel">
+    <h4 style="margin:0 0 10px 0;">필터</h4>
+    <label><input type="checkbox" checked onchange="filterMarkers('best')"> 최고 명당</label><br/>
+    <label><input type="checkbox" checked onchange="filterMarkers('good')"> 우수 명당</label><br/>
+    <label><input type="checkbox" checked onchange="filterMarkers('normal')"> 일반 명당</label><br/>
+    <label><input type="checkbox" checked onchange="filterMarkers('festival')"> 축제 중심</label><br/>
+    <label><input type="checkbox" checked onchange="filterMarkers('user')"> 사용자 제안</label>
+    <hr style="margin:10px 0;"/>
+    <div style="margin-top:8px;">
+        <button onclick="enableAddSpot()" style="width:100%; padding:8px; border:none; background:#667eea; color:#fff; border-radius:6px; cursor:pointer; font-size:13px;">📍 내 명당 제안</button>
+        <small style="display:block; margin-top:6px; color:#666; font-size:11px; line-height:1.3;">마커를 찍고 정보를 입력한 뒤 저장하거나 OSM에 제안할 수 있습니다.</small>
+    </div>
+</div>
+
+<script>
+    // 지도 초기화 (여의도 한강공원 중심)
+    const map = L.map('map').setView([37.5248, 126.9471], 14);
+
+    // OSM 타일
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+    // 마커 저장
+    let markers = { best: [], good: [], normal: [], festival: [], user: [] };
+
+    // 아이콘 생성
+    function createIcon(type) {
+        const icons = {
+            best: { html: '⭐', color:'#ff6b6b' },
+            good: { html: '👍', color:'#4facfe' },
+            normal: { html: '📍', color:'#43e97b' },
+            festival: { html: '🎪', color:'#fa709a' },
+            user: { html: '✚', color:'#7f8c8d' }
+        };
+        const i = icons[type] || icons['normal'];
+        return L.divIcon({
+            html: `<div style="background:${i.color};width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:white;border:3px solid white;">${i.html}</div>`,
+            className: '',
+            iconSize: [40,40],
+            iconAnchor: [20,20]
+        });
+    }
+
+    // --- 좌표 수정: 마포대교, 한강대교 기준으로 축제 발사 지점 보정 ---
+    const MAPO = [37.53361, 126.93639]; // 마포대교
+    const HANGANG = [37.5159, 126.9578]; // 한강대교
+
+    // 축제 발사 중심: 마포대교 ~ 한강대교 구간 (중간 지점)
+    const FESTIVAL_CENTER = [ (MAPO[0] + HANGANG[0]) / 2, (MAPO[1] + HANGANG[1]) / 2 ];
+
+    // 명당 데이터 (서울만)
+    const spots = [
+        {
+            type: 'festival',
+            name: '여의도 한강공원 불꽃 발사 지점 (실제 발사구간: 마포대교 ⇄ 한강대교)',
+            coords: FESTIVAL_CENTER,
+            rating: '🎆🎆🎆🎆🎆',
+            info: '불꽃이 발사되는 중심 수역(마포대교 ~ 한강대교 구간 기준). 접근 제한 구역이 있을 수 있습니다.',
+            crowd: '매우 높음',
+            view: '중심부'
+        },
+        {
+            type: 'best',
+            name: '63빌딩 전망대',
+            coords: [37.5197, 126.9394],
+            rating: '⭐⭐⭐⭐⭐',
+            info: '한강과 불꽃 전체를 조망 가능한 실내 전망대 (유료)',
+            crowd: '낮음 (유료)',
+            view: '최상급'
+        },
+        {
+            type: 'best',
+            name: '샛강역 인근 둔치',
+            coords: [37.51727, 126.92842], // 샛강역 근처 좌표 보정
+            rating: '⭐⭐⭐⭐⭐',
+            info: '넓은 공간, 한적함. 정면 시야 확보 가능.',
+            crowd: '낮음',
+            view: '탁월함'
+        },
+        {
+            type: 'good',
+            name: '여의도공원 잔디밭',
+            coords: [37.5265, 126.9242],
+            rating: '⭐⭐⭐⭐',
+            info: '가족 단위 추천, 넓은 잔디공간',
+            crowd: '중간',
+            view: '우수함'
+        },
+        {
+            type: 'good',
+            name: '선유도공원',
+            coords: [37.5453, 126.8958],
+            rating: '⭐⭐⭐⭐',
+            info: '독특한 뷰 포인트, 사진 촬영 명소',
+            crowd: '중간',
+            view: '우수함'
+        },
+        {
+            type: 'normal',
+            name: '마포대교 (수정된 좌표)',
+            coords: MAPO,
+            rating: '⭐⭐⭐',
+            info: '다리 위에서 보는 색다른 경험 (주의: 통행/안전 확인 필요)',
+            crowd: '높음',
+            view: '괜찮음'
+        },
+        {
+            type: 'normal',
+            name: '망원한강공원',
+            coords: [37.5516, 126.8950],
+            rating: '⭐⭐⭐',
+            info: '접근성 좋음, 편의시설 多',
+            crowd: '높음',
+            view: '보통'
+        }
+    ];
+
+    // 기본 마커 추가
+    spots.forEach(spot => {
+        const marker = L.marker(spot.coords, { icon: createIcon(spot.type) }).addTo(map);
+        const popupContent = `
+                <h4>${spot.name}</h4>
+                <div style="font-size:18px;margin:6px 0;">${spot.rating}</div>
+                <p><strong>시야:</strong> ${spot.view}</p>
+                <p><strong>혼잡도:</strong> ${spot.crowd}</p>
+                <p><strong>특징:</strong><br>${spot.info}</p>
+            `;
+        marker.bindPopup(popupContent, { className:'custom-popup', maxWidth:300 });
+        markers[spot.type].push(marker);
+    });
+
+    // 필터 상태
+    let filterState = { best:true, good:true, normal:true, festival:true, user:true };
+
+    function filterMarkers(type) {
+        filterState[type] = !filterState[type];
+        markers[type].forEach(m => {
+            if (filterState[type]) m.addTo(map); else map.removeLayer(m);
+        });
+    }
+
+    // 빠른 이동 (여의도)
+    const festivalsNav = {
+        yeouido: { center:[37.524755,126.947095], zoom:14, name:'여의도' }
+    };
+
+    // Leaflet control: 빠른 이동 & OSM 가이드 버튼
+    const quickNav = L.control({ position: 'topright' });
+    quickNav.onAdd = function() {
+        const div = L.DomUtil.create('div', 'quick-nav-box');
+        div.innerHTML = `
+                <div style="width:220px;">
+                    <h4 style="margin:0 0 8px 0; color:#ff6b6b;">빠른 이동 / OSM</h4>
+                    <button onclick="moveTo('yeouido')" style="width:100%;padding:6px;margin-bottom:6px;border:none;background:#667eea;color:#fff;border-radius:6px;cursor:pointer;">여의도 축제</button>
+                    <hr/>
+                    <small>OSM에 직접 반영하려면 아래 옵션을 이용하세요:</small>
+                    <button onclick="openOSMNote()" style="width:100%;padding:6px;margin-top:6px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;">현재 중심에 OSM 노트 남기기</button>
+                    <button onclick="openIDEditor()" style="width:100%;padding:6px;margin-top:6px;border:none;background:#f39c12;color:#fff;border-radius:6px;cursor:pointer;">현재 중심으로 iD 편집기 열기</button>
+                </div>
+            `;
+        return div;
+    };
+    quickNav.addTo(map);
+
+    function moveTo(key) {
+        const f = festivalsNav[key];
+        map.flyTo(f.center, f.zoom, { duration: 1.2 });
+    }
+
+    // OSM 노트 열기
+    function openOSMNote() {
+        const c = map.getCenter();
+        const url = `https://www.openstreetmap.org/note/new?lat=${c.lat}&lon=${c.lng}`;
+        window.open(url, '_blank');
+    }
+    // iD 편집기 열기
+    function openIDEditor() {
+        const c = map.getCenter();
+        const url = `https://www.openstreetmap.org/edit?editor=id#map=18/${c.lat}/${c.lng}`;
+        window.open(url, '_blank');
+    }
+
+    // --- 사용자 마커 추가 (Leaflet.Draw 이용) ---
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    const drawControl = new L.Control.Draw({
+        position: 'topright',
+        draw: {
+            polyline: false,
+            polygon: false,
+            rectangle: false,
+            circle: false,
+            circlemarker: false,
+            marker: {
+                repeatMode: false
+            }
+        },
+        edit: {
+            featureGroup: drawnItems,
+            edit: true,
+            remove: true
+        }
+    });
+
+    let drawControlAdded = false;
+    function enableAddSpot() {
+        if (!drawControlAdded) {
+            map.addControl(drawControl);
+            drawControlAdded = true;
+            alert('✅ 마커 추가 모드가 활성화되었습니다!\n\n📍 오른쪽 상단의 마커 아이콘을 클릭한 후\n지도에서 원하는 위치를 클릭하세요.\n\n그러면 팝업이 나타나 정보를 입력할 수 있습니다.');
+        } else {
+            alert('💡 마커 추가 모드가 이미 활성화되어 있습니다.\n\n오른쪽 상단의 마커 아이콘을 클릭한 후\n지도에서 원하는 위치를 클릭하세요!');
+        }
+    }
+
+    let currentUserMarker = null;
+
+    map.on(L.Draw.Event.CREATED, function (event) {
+        const layer = event.layer;
+        const latlng = layer.getLatLng();
+
+        // 기존 임시 마커가 있으면 제거
+        if (currentUserMarker) {
+            drawnItems.removeLayer(currentUserMarker);
+        }
+
+        currentUserMarker = layer;
+
+        const popupHtml = `
+                <div style="padding:4px;">
+                    <h4 style="margin:0 0 8px 0;color:#667eea;">내가 제안한 명당</h4>
+                    <p style="margin:4px 0;font-size:12px;color:#666;">위도: ${latlng.lat.toFixed(5)} / 경도: ${latlng.lng.toFixed(5)}</p>
+                    <hr style="margin:8px 0;border:none;border-top:1px solid #eee;"/>
+                    <label style="display:block;margin-bottom:4px;font-weight:bold;font-size:13px;">장소명:</label>
+                    <input type="text" id="spot-name-${latlng.lat}" placeholder="예: 한강철교 근처 둔치" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;"/>
+
+                    <label style="display:block;margin-bottom:4px;font-weight:bold;font-size:13px;">추천 이유:</label>
+                    <textarea id="spot-reason-${latlng.lat}" placeholder="예: 불꽃이 정면으로 보이고 사람이 적어요" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;height:60px;resize:vertical;"></textarea>
+
+                    <label style="display:block;margin-bottom:4px;font-weight:bold;font-size:13px;">등급 선택:</label>
+                    <select id="spot-rating-${latlng.lat}" style="width:100%;padding:6px;margin-bottom:10px;border:1px solid #ddd;border-radius:4px;">
+                        <option value="⭐⭐⭐⭐⭐">⭐⭐⭐⭐⭐ 최고 명당</option>
+                        <option value="⭐⭐⭐⭐" selected>⭐⭐⭐⭐ 우수 명당</option>
+                        <option value="⭐⭐⭐">⭐⭐⭐ 일반 명당</option>
+                    </select>
+
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button onclick="saveUserSpot(${latlng.lat}, ${latlng.lng})" style="flex:1;padding:8px;border:none;background:#667eea;color:#fff;border-radius:6px;cursor:pointer;font-weight:bold;">💾 저장</button>
+                        <button onclick="submitSpotToOSM(${latlng.lat}, ${latlng.lng})" style="flex:1;padding:8px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;">📤 OSM 제안</button>
+                    </div>
+                    <button onclick="cancelUserSpot()" style="width:100%;padding:6px;margin-top:6px;border:1px solid #ddd;background:#fff;color:#666;border-radius:6px;cursor:pointer;font-size:12px;">취소</button>
+                    <small style="display:block;margin-top:8px;color:#999;font-size:11px;">💡 저장하면 지도에 표시되고, OSM 제안하면 노트로 전송됩니다.</small>
+                </div>
+            `;
+        layer.bindPopup(popupHtml, { maxWidth:320, className:'custom-popup' }).openPopup();
+        drawnItems.addLayer(layer);
+        layer.setIcon(createIcon('user'));
+    });
+
+    function saveUserSpot(lat, lon) {
+        const name = document.getElementById(`spot-name-${lat}`)?.value || '사용자 제안 명당';
+        const reason = document.getElementById(`spot-reason-${lat}`)?.value || '추천 이유 없음';
+        const rating = document.getElementById(`spot-rating-${lat}`)?.value || '⭐⭐⭐⭐';
+
+        if (!name.trim()) {
+            alert('장소명을 입력해주세요!');
+            return;
+        }
+
+        // 저장된 정보로 팝업 업데이트
+        const savedPopup = `
+            <div style="padding:4px;">
+                <h4 style="margin:0 0 6px 0;color:#667eea;">${name}</h4>
+                <div style="font-size:16px;margin:4px 0;">${rating}</div>
+                <p style="margin:4px 0;"><strong>위치:</strong> ${lat.toFixed(5)}, ${lon.toFixed(5)}</p>
+                <p style="margin:4px 0;"><strong>추천 이유:</strong><br>${reason}</p>
+                <div style="margin-top:10px;display:flex;gap:6px;">
+                    <button onclick="submitSpotToOSM(${lat}, ${lon})" style="flex:1;padding:6px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;font-size:12px;">📤 OSM 제안</button>
+                    <button onclick="deleteUserSpot(${lat}, ${lon})" style="flex:1;padding:6px;border:1px solid #e74c3c;background:#fff;color:#e74c3c;border-radius:6px;cursor:pointer;font-size:12px;">🗑️ 삭제</button>
+                </div>
+            </div>
+        `;
+
+        if (currentUserMarker) {
+            currentUserMarker.bindPopup(savedPopup, { maxWidth:320, className:'custom-popup' });
+            currentUserMarker.setPopupContent(savedPopup);
+            markers['user'].push(currentUserMarker);
+            currentUserMarker = null;
+        }
+
+        alert('✅ 명당이 지도에 저장되었습니다!');
+        map.closePopup();
+    }
+
+    function submitSpotToOSM(lat, lon) {
+        const name = document.getElementById(`spot-name-${lat}`)?.value || '사용자 제안 명당';
+        const reason = document.getElementById(`spot-reason-${lat}`)?.value || '불꽃 관람 추천 장소';
+        const rating = document.getElementById(`spot-rating-${lat}`)?.value || '⭐⭐⭐⭐';
+
+        const noteText = encodeURIComponent(
+            `🎆 불꽃축제 명당 제안\n` +
+            `장소: ${name}\n` +
+            `등급: ${rating}\n` +
+            `추천 이유: ${reason}\n` +
+            `[위치: ${lat.toFixed(5)}, ${lon.toFixed(5)}]`
+        );
+
+        const url = `https://www.openstreetmap.org/note/new?lat=${lat}&lon=${lon}&text=${noteText}`;
+        window.open(url, '_blank');
+        alert('📤 OSM 노트 페이지가 열립니다. 로그인 후 제안을 완료해주세요!');
+    }
+
+    function cancelUserSpot() {
+        if (currentUserMarker) {
+            drawnItems.removeLayer(currentUserMarker);
+            currentUserMarker = null;
+        }
+        map.closePopup();
+    }
+
+    function deleteUserSpot(lat, lon) {
+        if (confirm('이 명당을 삭제하시겠습니까?')) {
+            markers['user'] = markers['user'].filter(m => {
+                const mLatLng = m.getLatLng();
+                if (Math.abs(mLatLng.lat - lat) < 0.00001 && Math.abs(mLatLng.lng - lon) < 0.00001) {
+                    drawnItems.removeLayer(m);
+                    return false;
+                }
+                return true;
+            });
+            map.closePopup();
+            alert('🗑️ 명당이 삭제되었습니다.');
+        }
+    }
+
+    // 초기 설정
+    map.setView(FESTIVAL_CENTER, 14);
+
+    // 발사 구간 시각화
+    const launchLine = L.polyline([MAPO, HANGANG], { color:'#ff6b6b', weight:4, dashArray:'6 6' }).addTo(map);
+    launchLine.bindPopup('<strong>불꽃 발사 구간 (예시)</strong><br>마포대교 ⇄ 한강대교');
+
+    // 초기 안내 팝업
+    L.popup({ closeOnClick:false, autoClose:false, closeButton:true })
+        .setLatLng([FESTIVAL_CENTER[0], FESTIVAL_CENTER[1]])
+        .setContent('<strong>팁</strong><br>오른쪽의 "내 명당 제안" 버튼으로 지도에 마커를 찍은 뒤 정보를 입력하고 저장하거나 OSM에 제안할 수 있습니다.')
+        .openOn(map);
+</script>
+</body>
+</html>
