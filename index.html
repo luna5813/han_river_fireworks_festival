@@ -308,27 +308,31 @@ window.addEventListener('load', function() {
 
         currentUserMarker = layer;
 
+        const latFixed = latlng.lat.toFixed(5);
+        const lngFixed = latlng.lng.toFixed(5);
+        const latId = latlng.lat.toString().replace('.', '_');
+
         const popupHtml = `
                 <div style="padding:4px;">
                     <h4 style="margin:0 0 8px 0;color:#667eea;">내가 제안한 명당</h4>
-                    <p style="margin:4px 0;font-size:12px;color:#666;">위도: ${latlng.lat.toFixed(5)} / 경도: ${latlng.lng.toFixed(5)}</p>
+                    <p style="margin:4px 0;font-size:12px;color:#666;">위도: ${latFixed} / 경도: ${lngFixed}</p>
                     <hr style="margin:8px 0;border:none;border-top:1px solid #eee;"/>
                     <label style="display:block;margin-bottom:4px;font-weight:bold;font-size:13px;">장소명:</label>
-                    <input type="text" id="spot-name-${latlng.lat}" placeholder="예: 한강철교 근처 둔치" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;"/>
+                    <input type="text" id="spot-name-${latId}" placeholder="예: 한강철교 근처 둔치" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;"/>
 
                     <label style="display:block;margin-bottom:4px;font-weight:bold;font-size:13px;">추천 이유:</label>
-                    <textarea id="spot-reason-${latlng.lat}" placeholder="예: 불꽃이 정면으로 보이고 사람이 적어요" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;height:60px;resize:vertical;"></textarea>
+                    <textarea id="spot-reason-${latId}" placeholder="예: 불꽃이 정면으로 보이고 사람이 적어요" style="width:100%;padding:6px;margin-bottom:8px;border:1px solid #ddd;border-radius:4px;height:60px;resize:vertical;"></textarea>
 
                     <label style="display:block;margin-bottom:4px;font-weight:bold;font-size:13px;">등급 선택:</label>
-                    <select id="spot-rating-${latlng.lat}" style="width:100%;padding:6px;margin-bottom:10px;border:1px solid #ddd;border-radius:4px;">
+                    <select id="spot-rating-${latId}" style="width:100%;padding:6px;margin-bottom:10px;border:1px solid #ddd;border-radius:4px;">
                         <option value="⭐⭐⭐⭐⭐">⭐⭐⭐⭐⭐ 최고 명당</option>
                         <option value="⭐⭐⭐⭐" selected>⭐⭐⭐⭐ 우수 명당</option>
                         <option value="⭐⭐⭐">⭐⭐⭐ 일반 명당</option>
                     </select>
 
                     <div style="display:flex;gap:6px;margin-top:10px;">
-                        <button onclick="saveUserSpot(${latlng.lat},${latlng.lng})" style="flex:1;padding:8px;border:none;background:#667eea;color:#fff;border-radius:6px;cursor:pointer;font-weight:bold;">💾 저장</button>
-                        <button onclick="submitSpotToOSM(${latlng.lat},${latlng.lng})" style="flex:1;padding:8px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;">📤 OSM 제안</button>
+                        <button onclick="saveUserSpot('${latId}',${latlng.lat},${latlng.lng})" style="flex:1;padding:8px;border:none;background:#667eea;color:#fff;border-radius:6px;cursor:pointer;font-weight:bold;">💾 저장</button>
+                        <button onclick="submitSpotToOSM('${latId}',${latlng.lat},${latlng.lng})" style="flex:1;padding:8px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;">📤 OSM 제안</button>
                     </div>
                     <button onclick="cancelUserSpot()" style="width:100%;padding:6px;margin-top:6px;border:1px solid #ddd;background:#fff;color:#666;border-radius:6px;cursor:pointer;font-size:12px;">취소</button>
                     <small style="display:block;margin-top:8px;color:#999;font-size:11px;">💡 저장하면 지도에 표시되고, OSM 제안하면 노트로 전송됩니다.</small>
@@ -339,10 +343,10 @@ window.addEventListener('load', function() {
         layer.setIcon(createIcon('user'));
     });
 
-    function saveUserSpot(lat, lon) {
-        const name = document.getElementById(`spot-name-${lat}`)?.value || '사용자 제안 명당';
-        const reason = document.getElementById(`spot-reason-${lat}`)?.value || '추천 이유 없음';
-        const rating = document.getElementById(`spot-rating-${lat}`)?.value || '⭐⭐⭐⭐';
+    function saveUserSpot(latId, lat, lon) {
+        const name = document.getElementById(`spot-name-${latId}`)?.value || '사용자 제안 명당';
+        const reason = document.getElementById(`spot-reason-${latId}`)?.value || '추천 이유 없음';
+        const rating = document.getElementById(`spot-rating-${latId}`)?.value || '⭐⭐⭐⭐';
 
         if (!name.trim()) {
             alert('장소명을 입력해주세요!');
@@ -374,10 +378,10 @@ window.addEventListener('load', function() {
         map.closePopup();
     }
 
-    function submitSpotToOSM(lat, lon) {
-        const name = document.getElementById(`spot-name-${lat}`)?.value || '사용자 제안 명당';
-        const reason = document.getElementById(`spot-reason-${lat}`)?.value || '불꽃 관람 추천 장소';
-        const rating = document.getElementById(`spot-rating-${lat}`)?.value || '⭐⭐⭐⭐';
+    function submitSpotToOSM(latId, lat, lon) {
+        const name = document.getElementById(`spot-name-${latId}`)?.value || '사용자 제안 명당';
+        const reason = document.getElementById(`spot-reason-${latId}`)?.value || '불꽃 관람 추천 장소';
+        const rating = document.getElementById(`spot-rating-${latId}`)?.value || '⭐⭐⭐⭐';
 
         const noteText = encodeURIComponent(
             `🎆 불꽃축제 명당 제안\n` +
