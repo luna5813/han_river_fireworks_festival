@@ -86,6 +86,11 @@
         .filter-panel-content { display:block; }
         .filter-toggle, .nav-toggle { display:none; }
         
+        /* 모바일 전용 요소들 - 기본 숨김 */
+        .mobile-legend { display:none; }
+        .mobile-filter-btn { display:none; }
+        .mobile-add-spot-btn { display:none; }
+        
         .quick-nav-box { background:#fff; padding:10px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.15); z-index:500; width:220px; }
         .quick-nav-content { display:block; }
         .leaflet-draw { display: none !important; }
@@ -100,135 +105,155 @@
             
             #map { height: calc(100vh - 70px); }
             
-            .legend { 
-                bottom:10px; 
-                left:10px; 
-                padding:8px; 
-                width:auto;
-                max-width:none;
-                font-size:11px;
-            }
-            .legend h3 { font-size:12px; margin-bottom:4px; }
-            .legend-item { gap:4px; margin:3px 0; font-size:10px; white-space:nowrap; }
-            .legend-icon { width:20px; height:20px; font-size:12px; flex-shrink:0; }
+            /* 데스크톱 요소 숨김 */
+            .legend { display:none; }
+            .filter-panel { display:none; }
+            .quick-nav-box { display:none; }
             
-            /* 필터 패널 토글 */
-            .filter-panel { 
-                top:75px; 
-                right:10px; 
-                padding:0;
-                width:auto;
-                max-width:none;
-                font-size:12px;
-            }
-            .filter-toggle {
-                display:flex;
-                width:auto;
-                padding:8px 12px;
-                background:#667eea;
-                color:#fff;
-                border:none;
-                border-radius:10px;
-                cursor:pointer;
-                font-weight:bold;
-                font-size:12px;
-                justify-content:space-between;
-                align-items:center;
-                white-space:nowrap;
-                gap:8px;
-            }
-            .filter-panel-content {
-                display:none;
-                padding:10px;
-                max-height:60vh;
-                overflow-y:auto;
-                width:200px;
-            }
-            .filter-panel-content.active {
+            /* 모바일 범례 - 우측 상단 */
+            .mobile-legend {
                 display:block;
+                position:fixed;
+                top:75px;
+                right:10px;
+                background:#fff;
+                padding:8px;
+                border-radius:8px;
+                box-shadow:0 4px 15px rgba(0,0,0,0.2);
+                z-index:1000;
+                max-width:140px;
             }
-            .filter-panel h4 { font-size:12px; margin:0 0 6px 0; }
-            .filter-panel label { 
-                font-size:10px; 
-                margin:3px 0; 
+            .mobile-legend h3 {
+                margin:0 0 6px 0;
+                color:#ff6b6b;
+                font-size:11px;
+                font-weight:bold;
+            }
+            .mobile-legend-item {
                 display:flex;
                 align-items:center;
                 gap:4px;
+                margin:3px 0;
+                font-size:9px;
+                line-height:1.2;
             }
-            .filter-panel label input { flex-shrink:0; }
-            .filter-panel button { 
-                padding:8px; 
-                font-size:11px;
-                margin-top:6px;
-                width:100%;
-            }
-            .filter-panel small { font-size:9px; line-height:1.2; }
-            
-            /* 빠른 이동 토글 */
-            .quick-nav-box { 
-                padding:0;
-                width:auto;
-                max-width:none;
-            }
-            .nav-toggle {
+            .mobile-legend-icon {
+                width:18px;
+                height:18px;
+                border-radius:50%;
                 display:flex;
-                width:auto;
-                padding:8px 12px;
-                background:#ff6b6b;
+                align-items:center;
+                justify-content:center;
+                color:#fff;
+                font-size:10px;
+                flex-shrink:0;
+            }
+            
+            /* 모바일 필터 버튼 - 범례 옆 */
+            .mobile-filter-btn {
+                display:block;
+                position:fixed;
+                top:75px;
+                right:160px;
+                background:#667eea;
                 color:#fff;
                 border:none;
+                padding:8px 12px;
                 border-radius:8px;
                 cursor:pointer;
-                font-weight:bold;
-                font-size:12px;
-                justify-content:space-between;
+                font-size:20px;
+                box-shadow:0 4px 15px rgba(0,0,0,0.2);
+                z-index:1000;
+                width:45px;
+                height:45px;
+                display:flex;
                 align-items:center;
-                white-space:nowrap;
-                gap:8px;
+                justify-content:center;
             }
-            .quick-nav-content {
+            
+            /* 모바일 필터 패널 */
+            .mobile-filter-panel {
                 display:none;
+                position:fixed;
+                top:130px;
+                right:10px;
+                background:#fff;
                 padding:10px;
+                border-radius:8px;
+                box-shadow:0 4px 20px rgba(0,0,0,0.3);
+                z-index:999;
                 width:200px;
+                max-height:60vh;
+                overflow-y:auto;
             }
-            .quick-nav-content.active {
+            .mobile-filter-panel.active {
                 display:block;
             }
-            .quick-nav-content > div {
-                width:100% !important;
+            .mobile-filter-panel h4 {
+                margin:0 0 8px 0;
+                color:#667eea;
+                font-size:13px;
             }
-            .quick-nav-box h4 { font-size:12px; margin:0 0 6px 0; }
-            .quick-nav-box button { 
-                padding:8px; 
+            .mobile-filter-panel label {
+                display:flex;
+                align-items:center;
+                gap:6px;
+                margin:6px 0;
                 font-size:11px;
-                margin-bottom:4px;
-                width:100%;
             }
-            .quick-nav-box small { font-size:9px; display:block; margin-bottom:4px; }
-            .quick-nav-box hr { margin:6px 0; }
+            .mobile-filter-panel label input {
+                flex-shrink:0;
+            }
+            
+            /* 모바일 명당 제안 버튼 - 하단 중앙 */
+            .mobile-add-spot-btn {
+                display:flex;
+                position:fixed;
+                bottom:20px;
+                left:50%;
+                transform:translateX(-50%);
+                background:linear-gradient(135deg, #667eea, #764ba2);
+                color:#fff;
+                border:none;
+                padding:12px 24px;
+                border-radius:25px;
+                cursor:pointer;
+                font-size:14px;
+                font-weight:bold;
+                box-shadow:0 6px 20px rgba(102,126,234,0.4);
+                z-index:1000;
+                align-items:center;
+                gap:6px;
+                white-space:nowrap;
+            }
         }
         
         @media screen and (max-width: 480px) {
             .header h1 { font-size:15px; }
             .header p { font-size:9px; }
             
-            .legend { 
+            .mobile-legend {
+                max-width:120px;
                 padding:6px;
-                font-size:10px;
             }
-            .legend h3 { font-size:11px; }
-            .legend-item { font-size:9px; margin:2px 0; }
-            .legend-icon { width:18px; height:18px; font-size:11px; }
+            .mobile-legend h3 { font-size:10px; }
+            .mobile-legend-item { font-size:8px; }
+            .mobile-legend-icon { width:16px; height:16px; font-size:9px; }
             
-            .filter-panel-content,
-            .quick-nav-content {
+            .mobile-filter-btn {
+                right:135px;
+                width:40px;
+                height:40px;
+                font-size:18px;
+            }
+            
+            .mobile-filter-panel {
                 width:180px;
             }
             
-            .filter-toggle,
-            .nav-toggle { 
-                font-size:11px; 
-                padding:7px 10px; 
+            .mobile-add-spot-btn {
+                font-size:13px;
+                padding:10px 20px;
             }
         }
     </style>
