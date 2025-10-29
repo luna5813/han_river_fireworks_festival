@@ -3,15 +3,36 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>불꽃축제 명당 지도 (OSM 참여형, 서울 전용)</title>
+    <title>서울 불꽃축제 명당 지도 | 여의도 한강 불꽃놀이 관람 장소</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="여의도 한강 불꽃축제 최고의 관람 명당을 찾아보세요. 63빌딩, 샛강역, 선유도공원 등 추천 장소와 실시간 지도 정보 제공. 직접 명당을 제안하고 공유할 수 있습니다."/>
+    <meta name="keywords" content="불꽃축제, 여의도 불꽃축제, 한강 불꽃놀이, 불꽃축제 명당, 여의도 한강공원, 불꽃축제 관람 장소, 서울 불꽃놀이, 63빌딩 전망대, 샛강역, 선유도공원"/>
+    <meta name="author" content="불꽃축제 명당 지도"/>
+    <meta name="robots" content="index, follow"/>
+    
+    <!-- Open Graph (SNS 공유용) -->
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="서울 불꽃축제 명당 지도 | 여의도 한강 불꽃놀이 관람 장소"/>
+    <meta property="og:description" content="여의도 한강 불꽃축제 최고의 관람 명당을 지도에서 확인하세요. 사용자 참여형 명당 추천 시스템."/>
+    <meta property="og:site_name" content="불꽃축제 명당 지도"/>
+    <meta property="og:locale" content="ko_KR"/>
+    <meta property="og:url" content="https://luna5813.github.io/han_river_fireworks_festival/"/>
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:title" content="서울 불꽃축제 명당 지도"/>
+    <meta name="twitter:description" content="여의도 한강 불꽃축제 최고의 관람 명당을 찾아보세요"/>
+    
+    <!-- 추가 SEO -->
+    <meta name="theme-color" content="#ff6b6b"/>
+    <link rel="canonical" href="https://luna5813.github.io/han_river_fireworks_festival/"/>
 
-    <!-- Leaflet -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Leaflet.Draw (사용자 마커 추가용) -->
+    
+    <!-- Leaflet.Draw CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -64,6 +85,8 @@
 </div>
 
 <script>
+// Leaflet이 완전히 로드될 때까지 대기
+window.addEventListener('load', function() {
     // 지도 초기화 (여의도 한강공원 중심)
     const map = L.map('map').setView([37.5248, 126.9471], 14);
 
@@ -399,6 +422,15 @@
         .setLatLng([FESTIVAL_CENTER[0], FESTIVAL_CENTER[1]])
         .setContent('<strong>팁</strong><br>오른쪽의 "내 명당 제안" 버튼으로 지도에 마커를 찍은 뒤 정보를 입력하고 저장하거나 OSM에 제안할 수 있습니다.')
         .openOn(map);
+    }
+    
+    // 페이지 로드 완료 후 실행
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMap);
+    } else {
+        initMap();
+    }
+})();
 </script>
 </body>
 </html>
