@@ -84,7 +84,11 @@
 
         .filter-panel { position: fixed; top:110px; right:20px; background:#fff; padding:12px; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.18); z-index:500; max-width:250px; }
         .filter-panel label { display:block; margin:6px 0; font-size:14px; }
+        .filter-panel-content { display:block; }
+        .filter-toggle, .nav-toggle { display:none; }
+        
         .quick-nav-box { background:#fff; padding:10px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.15); z-index:500; }
+        .quick-nav-content { display:block; }
         .leaflet-draw { display: none !important; }
         .custom-popup .leaflet-popup-content-wrapper { background: linear-gradient(135deg,#667eea,#764ba2); color:#fff; border-radius:12px; }
         .custom-popup .leaflet-popup-content { margin:12px; font-size:14px; }
@@ -101,19 +105,45 @@
                 bottom:10px; 
                 left:10px; 
                 padding:10px; 
-                max-width:160px;
+                max-width:calc(100vw - 20px);
                 font-size:11px;
             }
             .legend h3 { font-size:13px; margin-bottom:6px; }
             .legend-item { gap:6px; margin:4px 0; font-size:11px; }
             .legend-icon { width:24px; height:24px; font-size:14px; }
             
+            /* 필터 패널 토글 */
             .filter-panel { 
                 top:75px; 
                 right:10px; 
-                padding:8px; 
-                max-width:180px;
+                padding:0;
+                max-width:calc(100vw - 20px);
                 font-size:12px;
+            }
+            .filter-toggle {
+                display:block;
+                width:100%;
+                padding:10px;
+                background:#667eea;
+                color:#fff;
+                border:none;
+                border-radius:10px;
+                cursor:pointer;
+                font-weight:bold;
+                font-size:13px;
+                text-align:left;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+            }
+            .filter-panel-content {
+                display:none;
+                padding:10px;
+                max-height:70vh;
+                overflow-y:auto;
+            }
+            .filter-panel-content.active {
+                display:block;
             }
             .filter-panel h4 { font-size:13px; margin:0 0 6px 0; }
             .filter-panel label { font-size:11px; margin:4px 0; }
@@ -124,9 +154,33 @@
             }
             .filter-panel small { font-size:9px; }
             
+            /* 빠른 이동 토글 */
             .quick-nav-box { 
-                padding:8px;
-                max-width:200px;
+                padding:0;
+                max-width:calc(100vw - 20px);
+            }
+            .nav-toggle {
+                display:block;
+                width:100%;
+                padding:10px;
+                background:#ff6b6b;
+                color:#fff;
+                border:none;
+                border-radius:8px;
+                cursor:pointer;
+                font-weight:bold;
+                font-size:13px;
+                text-align:left;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+            }
+            .quick-nav-content {
+                display:none;
+                padding:10px;
+            }
+            .quick-nav-content.active {
+                display:block;
             }
             .quick-nav-box h4 { font-size:13px; }
             .quick-nav-box button { 
@@ -142,23 +196,24 @@
             .header p { font-size:10px; }
             
             .legend { 
-                max-width:140px;
+                max-width:calc(100vw - 20px);
                 padding:8px;
             }
             .legend h3 { font-size:12px; }
-            .legend-item { font-size:10px; }
+            .legend-item { font-size:10px; gap:4px; }
             .legend-icon { width:20px; height:20px; font-size:12px; }
             
             .filter-panel { 
-                max-width:160px;
-                padding:6px;
+                max-width:calc(100vw - 20px);
             }
+            .filter-toggle { font-size:12px; padding:8px; }
             .filter-panel h4 { font-size:12px; }
             .filter-panel label { font-size:10px; }
             
             .quick-nav-box { 
-                max-width:180px;
+                max-width:calc(100vw - 20px);
             }
+            .nav-toggle { font-size:12px; padding:8px; }
         }
     </style>
 </head>
