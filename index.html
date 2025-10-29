@@ -15,6 +15,10 @@
     <meta property="og:type" content="website"/>
     <meta property="og:title" content="서울 불꽃축제 명당 지도 | 여의도 한강 불꽃놀이 관람 장소"/>
     <meta property="og:description" content="여의도 한강 불꽃축제 최고의 관람 명당을 지도에서 확인하세요. 사용자 참여형 명당 추천 시스템."/>
+    <meta property="og:image" content="https://via.placeholder.com/1200x630/ff6b6b/ffffff?text=%EB%B6%88%EA%BD%83%EC%B6%95%EC%A0%9C+%EB%AA%85%EB%8B%B9+%EC%A7%80%EB%8F%84"/>
+    <meta property="og:image:width" content="1200"/>
+    <meta property="og:image:height" content="630"/>
+    <meta property="og:image:alt" content="서울 불꽃축제 명당 지도 미리보기"/>
     <meta property="og:site_name" content="불꽃축제 명당 지도"/>
     <meta property="og:locale" content="ko_KR"/>
     <meta property="og:url" content="https://luna5813.github.io/han_river_fireworks_festival/"/>
@@ -23,6 +27,7 @@
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:title" content="서울 불꽃축제 명당 지도"/>
     <meta name="twitter:description" content="여의도 한강 불꽃축제 최고의 관람 명당을 찾아보세요"/>
+    <meta name="twitter:image" content="https://via.placeholder.com/1200x630/ff6b6b/ffffff?text=%EB%B6%88%EA%BD%83%EC%B6%95%EC%A0%9C+%EB%AA%85%EB%8B%B9+%EC%A7%80%EB%8F%84"/>
     
     <!-- 추가 SEO -->
     <meta name="theme-color" content="#ff6b6b"/>
@@ -322,8 +327,8 @@ window.addEventListener('load', function() {
                     </select>
 
                     <div style="display:flex;gap:6px;margin-top:10px;">
-                        <button onclick="saveUserSpot(${latlng.lat}, ${latlng.lng})" style="flex:1;padding:8px;border:none;background:#667eea;color:#fff;border-radius:6px;cursor:pointer;font-weight:bold;">💾 저장</button>
-                        <button onclick="submitSpotToOSM(${latlng.lat}, ${latlng.lng})" style="flex:1;padding:8px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;">📤 OSM 제안</button>
+                        <button onclick="saveUserSpot(${latlng.lat},${latlng.lng})" style="flex:1;padding:8px;border:none;background:#667eea;color:#fff;border-radius:6px;cursor:pointer;font-weight:bold;">💾 저장</button>
+                        <button onclick="submitSpotToOSM(${latlng.lat},${latlng.lng})" style="flex:1;padding:8px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;">📤 OSM 제안</button>
                     </div>
                     <button onclick="cancelUserSpot()" style="width:100%;padding:6px;margin-top:6px;border:1px solid #ddd;background:#fff;color:#666;border-radius:6px;cursor:pointer;font-size:12px;">취소</button>
                     <small style="display:block;margin-top:8px;color:#999;font-size:11px;">💡 저장하면 지도에 표시되고, OSM 제안하면 노트로 전송됩니다.</small>
@@ -352,8 +357,8 @@ window.addEventListener('load', function() {
                 <p style="margin:4px 0;"><strong>위치:</strong> ${lat.toFixed(5)}, ${lon.toFixed(5)}</p>
                 <p style="margin:4px 0;"><strong>추천 이유:</strong><br>${reason}</p>
                 <div style="margin-top:10px;display:flex;gap:6px;">
-                    <button onclick="submitSpotToOSM(${lat}, ${lon})" style="flex:1;padding:6px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;font-size:12px;">📤 OSM 제안</button>
-                    <button onclick="deleteUserSpot(${lat}, ${lon})" style="flex:1;padding:6px;border:1px solid #e74c3c;background:#fff;color:#e74c3c;border-radius:6px;cursor:pointer;font-size:12px;">🗑️ 삭제</button>
+                    <button onclick="submitSpotToOSM(${lat},${lon})" style="flex:1;padding:6px;border:none;background:#2ecc71;color:#fff;border-radius:6px;cursor:pointer;font-size:12px;">📤 OSM 제안</button>
+                    <button onclick="deleteUserSpot(${lat},${lon})" style="flex:1;padding:6px;border:1px solid #e74c3c;background:#fff;color:#e74c3c;border-radius:6px;cursor:pointer;font-size:12px;">🗑️ 삭제</button>
                 </div>
             </div>
         `;
