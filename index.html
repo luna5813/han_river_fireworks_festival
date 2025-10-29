@@ -106,13 +106,13 @@
             #map { height: calc(100vh - 70px); }
             
             /* 데스크톱 요소 숨김 */
-            .legend { display:none; }
-            .filter-panel { display:none; }
-            .quick-nav-box { display:none; }
+            .legend { display:none !important; }
+            .filter-panel { display:none !important; }
+            .quick-nav-box { display:none !important; }
             
             /* 모바일 범례 - 우측 상단 */
             .mobile-legend {
-                display:block;
+                display:block !important;
                 position:fixed;
                 top:75px;
                 right:10px;
@@ -151,7 +151,7 @@
             
             /* 모바일 필터 버튼 - 범례 옆 */
             .mobile-filter-btn {
-                display:block;
+                display:flex !important;
                 position:fixed;
                 top:75px;
                 right:160px;
@@ -166,7 +166,6 @@
                 z-index:1000;
                 width:45px;
                 height:45px;
-                display:flex;
                 align-items:center;
                 justify-content:center;
             }
@@ -187,7 +186,7 @@
                 overflow-y:auto;
             }
             .mobile-filter-panel.active {
-                display:block;
+                display:block !important;
             }
             .mobile-filter-panel h4 {
                 margin:0 0 8px 0;
@@ -207,7 +206,7 @@
             
             /* 모바일 명당 제안 버튼 - 하단 중앙 */
             .mobile-add-spot-btn {
-                display:flex;
+                display:flex !important;
                 position:fixed;
                 bottom:20px;
                 left:50%;
