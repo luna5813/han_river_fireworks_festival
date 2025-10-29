@@ -266,6 +266,7 @@
 
 <div id="map"></div>
 
+<!-- 데스크톱 전용 범례 -->
 <div class="legend">
     <h3>🎯 명당 등급</h3>
     <div class="legend-item"><div class="legend-icon" style="background:#ff6b6b">⭐</div><div><strong>최고 명당</strong> - 시야 최상</div></div>
@@ -275,6 +276,33 @@
     <div class="legend-item"><div class="legend-icon" style="background:#7f8c8d">✚</div><div><strong>사용자 제안</strong> - OSM으로 제안/편집</div></div>
 </div>
 
+<!-- 모바일 전용 범례 (새로 추가!) -->
+<div class="mobile-legend">
+    <h3>🎯 명당 등급</h3>
+    <div class="mobile-legend-item"><div class="mobile-legend-icon" style="background:#ff6b6b">⭐</div><div>최고 명당</div></div>
+    <div class="mobile-legend-item"><div class="mobile-legend-icon" style="background:#4facfe">👍</div><div>우수 명당</div></div>
+    <div class="mobile-legend-item"><div class="mobile-legend-icon" style="background:#43e97b">📍</div><div>일반 명당</div></div>
+    <div class="mobile-legend-item"><div class="mobile-legend-icon" style="background:#fa709a">🎪</div><div>축제 중심</div></div>
+    <div class="mobile-legend-item"><div class="mobile-legend-icon" style="background:#7f8c8d">✚</div><div>사용자 제안</div></div>
+</div>
+
+<!-- 모바일 필터 버튼 (새로 추가!) -->
+<button class="mobile-filter-btn" onclick="toggleMobileFilter()">🔽</button>
+
+<!-- 모바일 필터 패널 (새로 추가!) -->
+<div class="mobile-filter-panel" id="mobile-filter-panel">
+    <h4>필터 설정</h4>
+    <label><input type="checkbox" checked onchange="filterMarkers('best')"> 최고 명당</label>
+    <label><input type="checkbox" checked onchange="filterMarkers('good')"> 우수 명당</label>
+    <label><input type="checkbox" checked onchange="filterMarkers('normal')"> 일반 명당</label>
+    <label><input type="checkbox" checked onchange="filterMarkers('festival')"> 축제 중심</label>
+    <label><input type="checkbox" checked onchange="filterMarkers('user')"> 사용자 제안</label>
+</div>
+
+<!-- 모바일 명당 제안 버튼 (새로 추가!) -->
+<button class="mobile-add-spot-btn" onclick="enableAddSpot()">📍 내 명당 제안하기</button>
+
+<!-- 데스크톱 전용 필터 패널 -->
 <div class="filter-panel">
     <h4 style="margin:0 0 10px 0;">필터</h4>
     <label><input type="checkbox" checked onchange="filterMarkers('best')"> 최고 명당</label><br/>
