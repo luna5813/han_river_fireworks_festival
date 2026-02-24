@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>2026 여의도 불꽃축제 실시간 지도</title>
+    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2QF8M7WFVJ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-2QF8M7WFVJ'); 
+    </script>
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -12,22 +21,16 @@
         #map { width: 100vw; height: 100vh; z-index: 1; }
         .header { position: absolute; top: 0; left: 0; right: 0; background: rgba(26, 26, 46, 0.85); color:#fff; padding: 6px 0; text-align:center; z-index: 1001; border-bottom: 1px solid rgba(255, 107, 107, 0.5); }
         .header h1 { margin:0; font-size: 14px; font-weight: 500; }
-        
         .control-panel { position: fixed; top: 45px; right: 12px; z-index: 1000; }
         .add-btn { padding: 8px 16px; background: #ff6b6b; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .add-btn.active { background: #2ecc71; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-
         .legend { position: fixed; bottom: 20px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 10px; z-index: 1000; font-size: 11px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee; line-height: 1.6; }
-        
         .status-badge { display: inline-block; padding: 1px 4px; border-radius: 3px; font-size: 9px; color: white; font-weight: bold; margin-left: 5px; }
-        .pending-tag { background: #95a5a6; } 
-        .verified-tag { background: #3498db; }
-
+        .pending-tag { background: #95a5a6; } .verified-tag { background: #3498db; }
         .vote-btn-group { display: flex; gap: 5px; margin-top: 10px; }
         .up-btn { flex: 1; background: #3498db; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer; }
         .down-btn { flex: 1; background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer; }
-
         .popup-form { min-width: 170px; }
         .popup-form input, .popup-form textarea, .popup-form select { width: 100%; margin-bottom: 6px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 13px; box-sizing: border-box; }
         .save-btn { width: 100%; padding: 10px; background: #2ecc71; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
@@ -52,7 +55,7 @@
     const map = L.map('map', { zoomControl: false }).setView([37.527, 126.945], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 1. [복구] 편의시설 데이터 (화장실, 편의점)
+    // [체크] 편의시설
     const facilities = [
         { name: "여의도 3호 매점(편의점)", lat: 37.5300, lng: 126.9310, type: "🏪" },
         { name: "여의도 2호 매점(편의점)", lat: 37.5270, lng: 126.9340, type: "🏪" },
@@ -66,19 +69,18 @@
         }).bindPopup(`<b>${f.name}</b>`).addTo(map);
     });
 
-    // 2. [복구] 하드코딩 명당 데이터 (인증 상태)
+    // [체크] 하드코딩 명당
     const defaultSpots = [
         { id: "def1", name: "노들섬 잔디마당", lat: 37.5175, lng: 126.9580, status: "보통", reason: "강 한가운데서 즐기는 파노라마 뷰", upvotes: 99, verified: true },
         { id: "def2", name: "마포대교 보도", lat: 37.5340, lng: 126.9365, status: "혼잡", reason: "현장감 최고! 인파 주의", upvotes: 99, verified: true }
     ];
 
-    // 3. 발사 위치 (🎇)
+    // [체크] 발사 위치
     [[37.5338, 126.9355], [37.5300, 126.9390], [37.5265, 126.9425], [37.5200, 126.9495]].forEach(pos => {
         L.marker(pos, { icon: L.divIcon({ html: '🎇', className: '', iconSize: [30, 30], iconAnchor: [15, 15] }) }).addTo(map);
         L.circle(pos, { color: '#ff4500', weight: 1, fillOpacity: 0.1, radius: 250 }).addTo(map);
     });
 
-    // 4. 신뢰 기반 마커 렌더링 시스템
     const markers = {}; 
 
     function renderSpot(data, key) {
@@ -86,30 +88,26 @@
             if (markers[key]) map.removeLayer(markers[key]);
             return;
         }
-
         const isVerified = data.verified || (data.upvotes >= 3);
         const opacity = isVerified ? 1.0 : 0.45;
         const color = isVerified ? "#3498db" : "#95a5a6";
         const tag = isVerified ? '<span class="status-badge verified-tag">인증됨</span>' : '<span class="status-badge pending-tag">확인 중</span>';
-
         const icon = L.divIcon({
             html: `<div style="background:${color}; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; border:2px solid white; font-size:12px; opacity:${opacity}; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">⭐</div>`,
             className: '', iconSize: [26, 26], iconAnchor: [13, 13]
         });
-
         const popupContent = `
             <div class="popup-form">
-                <strong style="font-size:14px;">${data.name}</strong> ${tag}<br>
+                <strong>${data.name}</strong> ${tag}<br>
                 <div style="font-size:12px; color:#666; margin-top:3px;">혼잡도: ${data.status}</div>
-                <p style="font-size:12px; margin:8px 0; line-height:1.4;">${data.reason}</p>
-                <div style="font-size:11px; color:#3498db; font-weight:bold;">👍 추천수: ${data.upvotes || 0}</div>
+                <p style="font-size:12px; margin:8px 0;">${data.reason}</p>
+                <div style="font-size:11px; color:#3498db;">👍 추천: ${data.upvotes || 0}</div>
                 ${!data.verified ? `
                 <div class="vote-btn-group">
                     <button class="up-btn" onclick="handleVote('${key}', 'up')">👍 맞아요</button>
                     <button class="down-btn" onclick="handleVote('${key}', 'down')">⚠️ 신고</button>
                 </div>` : ''}
             </div>`;
-
         if (markers[key]) {
             markers[key].setLatLng([data.lat, data.lng]).setIcon(icon).setPopupContent(popupContent);
         } else {
@@ -117,15 +115,15 @@
         }
     }
 
-    // 초기 데이터 로드
     defaultSpots.forEach(spot => renderSpot(spot, spot.id));
     database.ref('spots').on('value', (snapshot) => {
         const val = snapshot.val();
         for (let key in val) renderSpot(val[key], key);
     });
 
-    // 투표 로직
+    // [GA 연동] 투표 이벤트 추적
     window.handleVote = function(key, type) {
+        gtag('event', 'vote_interaction', { 'vote_type': type });
         database.ref(`spots/${key}`).transaction((current) => {
             if (current) {
                 if (type === 'up') {
@@ -139,12 +137,12 @@
         });
     };
 
-    // 제보 기능
     let isAddMode = false;
     function toggleAddMode() {
         isAddMode = !isAddMode;
+        if(isAddMode) gtag('event', 'click_add_start'); // [GA 연동] 제보 시도 추적
         const btn = document.getElementById('addBtn');
-        btn.innerText = isAddMode ? "지도 터치하여 선택" : "📍 명당 제보";
+        btn.innerText = isAddMode ? "지도 터치" : "📍 명당 제보";
         btn.classList.toggle('active');
     }
 
@@ -153,15 +151,10 @@
         const id = Date.now();
         const content = `
             <div class="popup-form">
-                <strong style="font-size:13px;">📍 새로운 명당 제보</strong><hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
                 <input type="text" id="name_${id}" placeholder="장소 이름">
-                <textarea id="reason_${id}" placeholder="추천 이유 (예: 화장실 5분거리)" rows="2"></textarea>
-                <select id="status_${id}">
-                    <option value="쾌적">🟢 쾌적함</option>
-                    <option value="보통" selected>🟡 보통</option>
-                    <option value="혼잡">🔴 매우 혼잡</option>
-                </select>
-                <button class="save-btn" onclick="saveToFirebase(${e.latlng.lat}, ${e.latlng.lng}, ${id})">등록하기</button>
+                <textarea id="reason_${id}" placeholder="추천 이유" rows="2"></textarea>
+                <select id="status_${id}"><option value="쾌적">🟢 쾌적</option><option value="보통" selected>🟡 보통</option><option value="혼잡">🔴 혼잡</option></select>
+                <button class="save-btn" onclick="saveToFirebase(${e.latlng.lat}, ${e.latlng.lng}, ${id})">등록</button>
             </div>`;
         L.popup().setLatLng(e.latlng).setContent(content).openOn(map);
         toggleAddMode();
@@ -172,8 +165,11 @@
         const reason = document.getElementById(`reason_${id}`).value;
         const status = document.getElementById(`status_${id}`).value;
         if(name && reason) {
-            database.ref('spots').push({ name, reason, status, lat, lng, upvotes: 0, reports: 0, verified: false });
-            map.closePopup();
+            database.ref('spots').push({ name, reason, status, lat, lng, upvotes: 0, reports: 0, verified: false })
+            .then(() => {
+                gtag('event', 'complete_registration', { 'spot_name': name }); // [GA 연동] 등록 성공 추적
+                map.closePopup();
+            });
         }
     };
 </script>
