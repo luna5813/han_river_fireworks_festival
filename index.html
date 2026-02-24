@@ -14,18 +14,23 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Pretendard', sans-serif; }
         .header { background: #1a1a2e; color:#fff; padding:15px; text-align:center; z-index: 1001; position: relative; border-bottom: 2px solid #ff6b6b; }
-        #map { width:100vw; height: calc(100vh - 82px); background: #f0f0f0; }
+        #map { width:100vw; height: calc(100vh - 82px); background: #aad3df; } /* 물 색상 배경 */
 
-        /* 불꽃 바지선 깜빡임 효과 */
-        .firework-barge {
-            background: #ff4500;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            animation: barge-flash 1s infinite alternate;
+        /* [핵심] 불꽃 아이콘 애니메이션 */
+        .firework-main-icon {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px !important;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 0, 0.8));
+            animation: fire-burst 1.5s infinite ease-in-out;
+            z-index: 1000 !important;
         }
-        @keyframes barge-flash {
-            from { opacity: 0.6; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1.2); box-shadow: 0 0 15px #ffeb3b; }
+
+        @keyframes fire-burst {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; filter: drop-shadow(0 0 20px rgba(255, 69, 0, 1)); }
+            100% { transform: scale(1); opacity: 0.8; }
         }
 
         .control-panel { position: fixed; top:100px; right:20px; z-index:1000; }
@@ -48,8 +53,8 @@
 </div>
 
 <div class="legend">
-    <div style="color: #ff4500; font-weight: bold; margin-bottom: 5px;">🔥 불꽃 발사 구간 (수상 바지선)</div>
-    <div style="width: 100%; height: 4px; background: orange; margin-bottom: 10px; opacity: 0.6;"></div>
+    <div style="color: #ff4500; font-weight: bold; margin-bottom: 5px;">🎇 실제 불꽃 발사 위치 (수상 바지선)</div>
+    <div style="font-size: 11px; color: #666; margin-bottom: 10px;">여의도 한강공원 앞 강물 위 구간</div>
     <div>⭐ 최고 명당 | ✨ 우수 명당 | 📍 일반 명당</div>
 </div>
 
@@ -57,41 +62,41 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
 <script>
-    // 1. Firebase 암호화 처리 (Base64)
-    // 주소를 직접 노출하지 않기 위해 인코딩된 값을 사용합니다.
+    // 1. Firebase 설정 (암호화 유지)
     const _0x4f2a = "aHR0cHM6Ly9maXJld29ya3MtbWFwLTUwYzA1LWRlZmF1bHQtcnRkYi.maXJlYmFzZWlvLmNvbS8="; 
-    const firebaseConfig = { 
-        databaseURL: atob(_0x4f2a.replace(".m", "Zm")) // 실행 시점에만 주소 복원
-    };
+    const firebaseConfig = { databaseURL: atob(_0x4f2a.replace(".m", "Zm")) };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 2. OSM 기반 지도 초기화
+    // 2. 지도 초기화
     const map = L.map('map', { zoomControl: false }).setView([37.528, 126.940], 14);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // 3. 실제 불꽃 발사 구간 (마포대교 ~ 한강철교 수상 구간)
-    const bargeLine = [
-        [37.5332, 126.9355], // 마포대교 부근
-        [37.5295, 126.9380], // 여의도공원 앞
-        [37.5255, 126.9410], // 63빌딩 앞 메인
-        [37.5190, 126.9495]  // 한강철교 부근
+    // 3. 실제 불꽃 발사 구간 (강 중심부 수상 좌표로 정밀 조정)
+    const bargePositions = [
+        [37.5345, 126.9350], // 마포대교 하단 강 중심
+        [37.5310, 126.9380], // 여의도한강공원 앞 강 중심
+        [37.5270, 126.9415], // 63빌딩 앞 메인 수상
+        [37.5210, 126.9485]  // 한강철교 근처 강 중심
     ];
 
-    // 수상 발사 라인 표시
-    L.polyline(bargeLine, { color: 'orange', weight: 4, opacity: 0.5, dashArray: '5, 10' }).addTo(map);
-
-    // 바지선 위치 애니메이션 마커
-    bargeLine.forEach((pos) => {
-        L.circleMarker(pos, { radius: 7, className: 'firework-barge' })
-            .addTo(map)
-            .bindPopup("<b>불꽃 발사 바지선 지점</b><br>강물 위 수상에서 발사됩니다.");
+    // 모든 발사 위치에 🎇 아이콘 적용
+    bargePositions.forEach((pos) => {
+        L.marker(pos, {
+            icon: L.divIcon({
+                className: 'firework-main-icon',
+                html: '🎇',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            }),
+            interactive: true
+        }).addTo(map).bindPopup("<b>불꽃 발사 바지선 지점</b><br>실제 수상에서 발사되는 위치입니다.");
+        
+        // 주변 발사 반경 효과 (옅은 주황색 원)
+        L.circle(pos, { color: 'orange', weight: 1, fillColor: '#ffcc00', fillOpacity: 0.1, radius: 200 }).addTo(map);
     });
 
-    // 4. 아이콘 생성 함수
+    // 4. 명당 마커 아이콘 생성 함수
     function getCustomIcon(rating) {
         let iconHtml = '📍'; let bgColor = '#4facfe';
         if (rating === "⭐⭐⭐⭐⭐") { iconHtml = '⭐'; bgColor = '#FFD700'; }
@@ -102,7 +107,7 @@
         });
     }
 
-    // 5. Firebase 실시간 동기화
+    // 5. Firebase 데이터 실시간 로드
     database.ref('spots').on('child_added', (snapshot) => {
         const data = snapshot.val();
         L.marker([data.lat, data.lng], { icon: getCustomIcon(data.rating) })
@@ -110,9 +115,9 @@
             .addTo(map);
     });
 
-    // 6. 명당 등록 기능
+    // 6. 등록 로직
     window.enableAddSpot = function() {
-        alert("지도를 클릭해서 명당 위치를 선택하세요!");
+        alert("📍 지도를 클릭해서 명당 위치를 선택하세요!");
         new L.Draw.Marker(map).enable();
     };
 
@@ -121,13 +126,13 @@
         const id = Date.now();
         const content = `
             <div class="popup-form">
-                <h4>📍 명당 정보 입력</h4>
+                <h4>📍 명당 정보</h4>
                 <input type="text" id="name_${id}" placeholder="장소 명칭">
                 <textarea id="reason_${id}" placeholder="추천 이유" rows="2"></textarea>
                 <select id="rating_${id}">
-                    <option value="⭐⭐⭐⭐⭐">⭐ 최고 명당</option>
-                    <option value="⭐⭐⭐⭐" selected>✨ 우수 명당</option>
-                    <option value="⭐⭐⭐">📍 일반 명당</option>
+                    <option value="⭐⭐⭐⭐⭐">⭐ 최고</option>
+                    <option value="⭐⭐⭐⭐" selected>✨ 우수</option>
+                    <option value="⭐⭐⭐">📍 일반</option>
                 </select>
                 <button class="save-btn" onclick="saveToFirebase(${latlng.lat}, ${latlng.lng}, ${id})">공유하기</button>
             </div>`;
