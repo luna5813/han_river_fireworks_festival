@@ -10,22 +10,27 @@
     <style>
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Pretendard', sans-serif; }
         #map { width: 100vw; height: 100vh; z-index: 1; }
-        .header { position: absolute; top: 0; left: 0; right: 0; background: rgba(26, 26, 46, 0.8); color:#fff; padding: 5px 0; text-align:center; z-index: 1001; border-bottom: 1px solid rgba(255, 107, 107, 0.3); }
-        .header h1 { margin:0; font-size: 13px; font-weight: 400; }
+        .header { position: absolute; top: 0; left: 0; right: 0; background: rgba(26, 26, 46, 0.85); color:#fff; padding: 6px 0; text-align:center; z-index: 1001; border-bottom: 1px solid rgba(255, 107, 107, 0.5); }
+        .header h1 { margin:0; font-size: 14px; font-weight: 500; }
         
-        .control-panel { position: fixed; top: 40px; right: 10px; z-index: 1000; }
-        .add-btn { padding: 7px 14px; background: #ff6b6b; color: white; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 12px; }
+        .control-panel { position: fixed; top: 45px; right: 12px; z-index: 1000; }
+        .add-btn { padding: 8px 16px; background: #ff6b6b; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .add-btn.active { background: #2ecc71; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
-        .legend { position: fixed; bottom: 15px; left: 10px; background: rgba(255,255,255,0.9); padding: 8px; border-radius: 8px; z-index: 1000; font-size: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #ddd; line-height: 1.5; }
+        .legend { position: fixed; bottom: 20px; left: 12px; background: rgba(255,255,255,0.95); padding: 10px; border-radius: 10px; z-index: 1000; font-size: 11px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee; line-height: 1.6; }
         
-        .status-badge { display: inline-block; padding: 1px 4px; border-radius: 3px; font-size: 9px; color: white; font-weight: bold; }
-        .status-green { background: #2ecc71; } .status-yellow { background: #f1c40f; } .status-red { background: #e74c3c; }
+        .status-badge { display: inline-block; padding: 1px 4px; border-radius: 3px; font-size: 9px; color: white; font-weight: bold; margin-left: 5px; }
+        .pending-tag { background: #95a5a6; } 
+        .verified-tag { background: #3498db; }
 
-        .popup-form { min-width: 150px; }
-        .popup-form select, .popup-form input, .popup-form textarea { width: 100%; margin-bottom: 5px; padding: 7px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px; box-sizing: border-box; }
-        .save-btn { width: 100%; padding: 8px; background: #2ecc71; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .vote-btn-group { display: flex; gap: 5px; margin-top: 10px; }
+        .up-btn { flex: 1; background: #3498db; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .down-btn { flex: 1; background: #e74c3c; color: white; border: none; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+
+        .popup-form { min-width: 170px; }
+        .popup-form input, .popup-form textarea, .popup-form select { width: 100%; margin-bottom: 6px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 13px; box-sizing: border-box; }
+        .save-btn { width: 100%; padding: 10px; background: #2ecc71; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -36,7 +41,7 @@
 
 <div class="legend">
     <strong>🎇 발사 위치</strong> | 🚽 화장실 | 🏪 편의점<br>
-    🟢 쾌적 🟡 보통 🔴 혼잡
+    🔵 인증 명당 | ⚪ 확인 중 (흐림)
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -47,51 +52,100 @@
     const map = L.map('map', { zoomControl: false }).setView([37.527, 126.945], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // [복구 완료] 하드코딩 명당 데이터
-    const defaultSpots = [
-        { name: "노들섬 잔디마당", lat: 37.5175, lng: 126.9580, rating: "⭐⭐⭐⭐⭐", status: "보통", reason: "강 한가운데서 즐기는 파노라마 뷰" },
-        { name: "마포대교 보도", lat: 37.5340, lng: 126.9365, rating: "⭐⭐⭐", status: "혼잡", reason: "현장감은 최고지만 흔들림과 인파 주의" }
-    ];
-
-    // 편의시설 데이터
+    // 1. [복구] 편의시설 데이터 (화장실, 편의점)
     const facilities = [
-        { name: "여의도 편의점", lat: 37.5270, lng: 126.9340, type: "🏪" },
-        { name: "한강공원 화장실", lat: 37.5285, lng: 126.9335, type: "🚽" },
-        { name: "원효대교 화장실", lat: 37.5255, lng: 126.9405, type: "🚽" }
+        { name: "여의도 3호 매점(편의점)", lat: 37.5300, lng: 126.9310, type: "🏪" },
+        { name: "여의도 2호 매점(편의점)", lat: 37.5270, lng: 126.9340, type: "🏪" },
+        { name: "여의도 안내센터 화장실", lat: 37.5285, lng: 126.9335, type: "🚽" },
+        { name: "마포대교 남단 화장실", lat: 37.5325, lng: 126.9295, type: "🚽" },
+        { name: "원효대교 남단 화장실", lat: 37.5255, lng: 126.9405, type: "🚽" }
     ];
     facilities.forEach(f => {
-        L.marker([f.lat, f.lng], { icon: L.divIcon({ html: f.type, className: '', iconSize: [20, 20] }) }).bindPopup(f.name).addTo(map);
+        L.marker([f.lat, f.lng], {
+            icon: L.divIcon({ html: `<div style="font-size:18px;">${f.type}</div>`, className: '', iconSize: [24, 24], iconAnchor: [12, 12] })
+        }).bindPopup(`<b>${f.name}</b>`).addTo(map);
     });
 
-    // 발사 위치
+    // 2. [복구] 하드코딩 명당 데이터 (인증 상태)
+    const defaultSpots = [
+        { id: "def1", name: "노들섬 잔디마당", lat: 37.5175, lng: 126.9580, status: "보통", reason: "강 한가운데서 즐기는 파노라마 뷰", upvotes: 99, verified: true },
+        { id: "def2", name: "마포대교 보도", lat: 37.5340, lng: 126.9365, status: "혼잡", reason: "현장감 최고! 인파 주의", upvotes: 99, verified: true }
+    ];
+
+    // 3. 발사 위치 (🎇)
     [[37.5338, 126.9355], [37.5300, 126.9390], [37.5265, 126.9425], [37.5200, 126.9495]].forEach(pos => {
         L.marker(pos, { icon: L.divIcon({ html: '🎇', className: '', iconSize: [30, 30], iconAnchor: [15, 15] }) }).addTo(map);
         L.circle(pos, { color: '#ff4500', weight: 1, fillOpacity: 0.1, radius: 250 }).addTo(map);
     });
 
-    function getStatusClass(s) { return s === "혼잡" ? "status-red" : (s === "보통" ? "status-yellow" : "status-green"); }
-    function getCustomIcon(status) {
-        const color = status === "혼잡" ? "#e74c3c" : (status === "보통" ? "#f1c40f" : "#2ecc71");
-        return L.divIcon({
-            html: `<div style="background:${color}; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; border:1.5px solid white; font-size:10px;">⭐</div>`,
-            className: '', iconSize: [24, 24], iconAnchor: [12, 12]
+    // 4. 신뢰 기반 마커 렌더링 시스템
+    const markers = {}; 
+
+    function renderSpot(data, key) {
+        if (data.reports && data.reports >= 1) { 
+            if (markers[key]) map.removeLayer(markers[key]);
+            return;
+        }
+
+        const isVerified = data.verified || (data.upvotes >= 3);
+        const opacity = isVerified ? 1.0 : 0.45;
+        const color = isVerified ? "#3498db" : "#95a5a6";
+        const tag = isVerified ? '<span class="status-badge verified-tag">인증됨</span>' : '<span class="status-badge pending-tag">확인 중</span>';
+
+        const icon = L.divIcon({
+            html: `<div style="background:${color}; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; border:2px solid white; font-size:12px; opacity:${opacity}; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">⭐</div>`,
+            className: '', iconSize: [26, 26], iconAnchor: [13, 13]
         });
+
+        const popupContent = `
+            <div class="popup-form">
+                <strong style="font-size:14px;">${data.name}</strong> ${tag}<br>
+                <div style="font-size:12px; color:#666; margin-top:3px;">혼잡도: ${data.status}</div>
+                <p style="font-size:12px; margin:8px 0; line-height:1.4;">${data.reason}</p>
+                <div style="font-size:11px; color:#3498db; font-weight:bold;">👍 추천수: ${data.upvotes || 0}</div>
+                ${!data.verified ? `
+                <div class="vote-btn-group">
+                    <button class="up-btn" onclick="handleVote('${key}', 'up')">👍 맞아요</button>
+                    <button class="down-btn" onclick="handleVote('${key}', 'down')">⚠️ 신고</button>
+                </div>` : ''}
+            </div>`;
+
+        if (markers[key]) {
+            markers[key].setLatLng([data.lat, data.lng]).setIcon(icon).setPopupContent(popupContent);
+        } else {
+            markers[key] = L.marker([data.lat, data.lng], { icon: icon }).bindPopup(popupContent).addTo(map);
+        }
     }
 
-    // 데이터 표시 (기본 + Firebase)
-    const showSpot = (data) => {
-        L.marker([data.lat, data.lng], { icon: getCustomIcon(data.status) })
-            .bindPopup(`<strong>${data.name}</strong> <span class="status-badge ${getStatusClass(data.status)}">${data.status}</span><p style="font-size:11px; margin:3px 0;">${data.reason}</p>`).addTo(map);
+    // 초기 데이터 로드
+    defaultSpots.forEach(spot => renderSpot(spot, spot.id));
+    database.ref('spots').on('value', (snapshot) => {
+        const val = snapshot.val();
+        for (let key in val) renderSpot(val[key], key);
+    });
+
+    // 투표 로직
+    window.handleVote = function(key, type) {
+        database.ref(`spots/${key}`).transaction((current) => {
+            if (current) {
+                if (type === 'up') {
+                    current.upvotes = (current.upvotes || 0) + 1;
+                    if (current.upvotes >= 3) current.verified = true;
+                } else {
+                    current.reports = (current.reports || 0) + 1;
+                }
+            }
+            return current;
+        });
     };
 
-    defaultSpots.forEach(showSpot);
-    database.ref('spots').on('child_added', (snap) => showSpot(snap.val()));
-
+    // 제보 기능
     let isAddMode = false;
     function toggleAddMode() {
         isAddMode = !isAddMode;
-        document.getElementById('addBtn').innerText = isAddMode ? "지도 터치" : "📍 명당 제보";
-        document.getElementById('addBtn').classList.toggle('active');
+        const btn = document.getElementById('addBtn');
+        btn.innerText = isAddMode ? "지도 터치하여 선택" : "📍 명당 제보";
+        btn.classList.toggle('active');
     }
 
     map.on('click', function(e) {
@@ -99,14 +153,15 @@
         const id = Date.now();
         const content = `
             <div class="popup-form">
-                <input type="text" id="name_${id}" placeholder="장소명">
-                <textarea id="reason_${id}" placeholder="추천 이유"></textarea>
+                <strong style="font-size:13px;">📍 새로운 명당 제보</strong><hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+                <input type="text" id="name_${id}" placeholder="장소 이름">
+                <textarea id="reason_${id}" placeholder="추천 이유 (예: 화장실 5분거리)" rows="2"></textarea>
                 <select id="status_${id}">
-                    <option value="쾌적">🟢 쾌적</option>
+                    <option value="쾌적">🟢 쾌적함</option>
                     <option value="보통" selected>🟡 보통</option>
-                    <option value="혼잡">🔴 혼잡</option>
+                    <option value="혼잡">🔴 매우 혼잡</option>
                 </select>
-                <button class="save-btn" onclick="saveToFirebase(${e.latlng.lat}, ${e.latlng.lng}, ${id})">등록</button>
+                <button class="save-btn" onclick="saveToFirebase(${e.latlng.lat}, ${e.latlng.lng}, ${id})">등록하기</button>
             </div>`;
         L.popup().setLatLng(e.latlng).setContent(content).openOn(map);
         toggleAddMode();
@@ -117,7 +172,8 @@
         const reason = document.getElementById(`reason_${id}`).value;
         const status = document.getElementById(`status_${id}`).value;
         if(name && reason) {
-            database.ref('spots').push({ name, reason, status, lat, lng }).then(() => map.closePopup());
+            database.ref('spots').push({ name, reason, status, lat, lng, upvotes: 0, reports: 0, verified: false });
+            map.closePopup();
         }
     };
 </script>
