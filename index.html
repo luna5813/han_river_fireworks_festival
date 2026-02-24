@@ -3,70 +3,134 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>서울 불꽃축제 실시간 명당 지도</title>
+    <title>실시간 여의도 불꽃축제 명당 지도</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
+    
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
     <style>
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Pretendard', sans-serif; }
-        .header { background: linear-gradient(135deg,#ff6b6b,#ee5a6f); color:#fff; padding:15px; text-align:center; position: relative; z-index: 1001; }
-        #map { width:100vw; height: calc(100vh - 82px); background: #f0f0f0; } /* 기본 배경색 */
-        .firework-icon { display: flex !important; align-items: center; justify-content: center; font-size: 30px !important; background: radial-gradient(circle, rgba(255,255,0,0.9) 0%, rgba(255,165,0,0.2) 70%); border-radius: 50%; border: 2px solid #ff4500; animation: firework-pulse 1.2s infinite; z-index: 1000 !important; }
-        @keyframes firework-pulse { 0% { transform: scale(1); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
+        .header { background: #1a1a2e; color:#fff; padding:15px; text-align:center; z-index: 1001; position: relative; border-bottom: 2px solid #ff6b6b; }
+        #map { width:100vw; height: calc(100vh - 82px); background: #f0f0f0; }
+
+        /* 불꽃 바지선 깜빡임 효과 */
+        .firework-barge {
+            background: #ff4500;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            animation: barge-flash 1s infinite alternate;
+        }
+        @keyframes barge-flash {
+            from { opacity: 0.6; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1.2); box-shadow: 0 0 15px #ffeb3b; }
+        }
+
         .control-panel { position: fixed; top:100px; right:20px; z-index:1000; }
-        .add-btn { padding:14px 24px; background:#4facfe; color:white; border:none; border-radius:50px; cursor:pointer; font-weight:bold; box-shadow:0 6px 20px rgba(0,0,0,0.2); }
-        .legend { position: fixed; bottom:30px; left:20px; background:white; padding:15px; border-radius:15px; box-shadow:0 4px 20px rgba(0,0,0,0.1); z-index:1000; font-size: 13px; }
-        .popup-form { min-width: 200px; }
-        .popup-form input, .popup-form textarea, .popup-form select { width: 100%; margin-bottom: 8px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
-        .save-btn { width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .add-btn { padding:14px 24px; background:#ff6b6b; color:white; border:none; border-radius:50px; cursor:pointer; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.3); }
+        .legend { position: fixed; bottom:30px; left:20px; background:white; padding:15px; border-radius:12px; z-index:1000; font-size: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        .popup-form input, .popup-form textarea, .popup-form select { width: 100%; margin-bottom: 8px; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        .save-btn { width: 100%; padding: 10px; background: #2ecc71; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-<div class="header"><h1>🎆 실시간 불꽃 명당 지도 🎇</h1></div>
+
+<div class="header">
+    <h1>🎆 실시간 여의도 불꽃축제 명당 지도 🎇</h1>
+</div>
+
 <div id="map"></div>
-<div class="control-panel"><button class="add-btn" onclick="enableAddSpot()">📍 내 명당 제보하기</button></div>
-<div class="legend"><strong>🎨 아이콘 안내</strong><div style="margin-top:5px">🎇 불꽃 발사 지점</div><div>⭐ 최고 명당</div><div>✨ 우수 명당</div><div>📍 일반 명당</div></div>
+
+<div class="control-panel">
+    <button class="add-btn" onclick="enableAddSpot()">📍 명당 제보하기</button>
+</div>
+
+<div class="legend">
+    <div style="color: #ff4500; font-weight: bold; margin-bottom: 5px;">🔥 불꽃 발사 구간 (수상 바지선)</div>
+    <div style="width: 100%; height: 4px; background: orange; margin-bottom: 10px; opacity: 0.6;"></div>
+    <div>⭐ 최고 명당 | ✨ 우수 명당 | 📍 일반 명당</div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+
 <script>
-    const firebaseConfig = { databaseURL: "https://fireworks-map-50c05-default-rtdb.firebaseio.com/" };
+    // 1. Firebase 암호화 처리 (Base64)
+    // 주소를 직접 노출하지 않기 위해 인코딩된 값을 사용합니다.
+    const _0x4f2a = "aHR0cHM6Ly9maXJld29ya3MtbWFwLTUwYzA1LWRlZmF1bHQtcnRkYi.maXJlYmFzZWlvLmNvbS8="; 
+    const firebaseConfig = { 
+        databaseURL: atob(_0x4f2a.replace(".m", "Zm")) // 실행 시점에만 주소 복원
+    };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const map = L.map('map', { zoomControl: false }).setView([37.5255, 126.9405], 14);
+    // 2. OSM 기반 지도 초기화
+    const map = L.map('map', { zoomControl: false }).setView([37.528, 126.940], 14);
     
-    // [수정된 부분] 가장 안정적인 OSM 타일 레이어
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    function addFireworkZones() {
-        [[37.5255, 126.9405], [37.5228, 126.9472]].forEach(coords => {
-            L.marker(coords, { icon: L.divIcon({ className: 'firework-icon', html: '🎇', iconSize: [40, 40], iconAnchor: [20, 20] }) }).addTo(map);
-            L.circle(coords, { color: '#ff4500', fillColor: '#ffcc00', fillOpacity: 0.15, radius: 250 }).addTo(map);
-        });
-    }
-    addFireworkZones();
+    // 3. 실제 불꽃 발사 구간 (마포대교 ~ 한강철교 수상 구간)
+    const bargeLine = [
+        [37.5332, 126.9355], // 마포대교 부근
+        [37.5295, 126.9380], // 여의도공원 앞
+        [37.5255, 126.9410], // 63빌딩 앞 메인
+        [37.5190, 126.9495]  // 한강철교 부근
+    ];
 
+    // 수상 발사 라인 표시
+    L.polyline(bargeLine, { color: 'orange', weight: 4, opacity: 0.5, dashArray: '5, 10' }).addTo(map);
+
+    // 바지선 위치 애니메이션 마커
+    bargeLine.forEach((pos) => {
+        L.circleMarker(pos, { radius: 7, className: 'firework-barge' })
+            .addTo(map)
+            .bindPopup("<b>불꽃 발사 바지선 지점</b><br>강물 위 수상에서 발사됩니다.");
+    });
+
+    // 4. 아이콘 생성 함수
     function getCustomIcon(rating) {
         let iconHtml = '📍'; let bgColor = '#4facfe';
         if (rating === "⭐⭐⭐⭐⭐") { iconHtml = '⭐'; bgColor = '#FFD700'; }
         else if (rating === "⭐⭐⭐⭐") { iconHtml = '✨'; bgColor = '#C0C0C0'; }
-        return L.divIcon({ html: `<div style="background:${bgColor}; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; color:white; border:2px solid white; shadow: 0 3px 8px rgba(0,0,0,0.2);">${iconHtml}</div>`, className: '', iconSize: [34, 34], iconAnchor: [17, 17] });
+        return L.divIcon({
+            html: `<div style="background:${bgColor}; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; color:white; border:2px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.2);">${iconHtml}</div>`,
+            className: '', iconSize: [34, 34], iconAnchor: [17, 17]
+        });
     }
 
+    // 5. Firebase 실시간 동기화
     database.ref('spots').on('child_added', (snapshot) => {
         const data = snapshot.val();
-        L.marker([data.lat, data.lng], { icon: getCustomIcon(data.rating) }).bindPopup(`<strong>${data.name}</strong><br>${data.rating}<p>${data.reason}</p>`).addTo(map);
+        L.marker([data.lat, data.lng], { icon: getCustomIcon(data.rating) })
+            .bindPopup(`<strong>${data.name}</strong><br>${data.rating}<p>${data.reason}</p>`)
+            .addTo(map);
     });
 
-    window.enableAddSpot = function() { new L.Draw.Marker(map).enable(); };
+    // 6. 명당 등록 기능
+    window.enableAddSpot = function() {
+        alert("지도를 클릭해서 명당 위치를 선택하세요!");
+        new L.Draw.Marker(map).enable();
+    };
+
     map.on(L.Draw.Event.CREATED, function (e) {
         const latlng = e.layer.getLatLng();
         const id = Date.now();
-        const content = `<div class="popup-form"><h4>📍 정보 입력</h4><input type="text" id="name_${id}" placeholder="장소명"><textarea id="reason_${id}" placeholder="추천 이유"></textarea><select id="rating_${id}"><option value="⭐⭐⭐⭐⭐">⭐ 최고</option><option value="⭐⭐⭐⭐">✨ 우수</option><option value="⭐⭐⭐">📍 일반</option></select><button class="save-btn" onclick="saveToFirebase(${latlng.lat}, ${latlng.lng}, ${id})">공유하기</button></div>`;
+        const content = `
+            <div class="popup-form">
+                <h4>📍 명당 정보 입력</h4>
+                <input type="text" id="name_${id}" placeholder="장소 명칭">
+                <textarea id="reason_${id}" placeholder="추천 이유" rows="2"></textarea>
+                <select id="rating_${id}">
+                    <option value="⭐⭐⭐⭐⭐">⭐ 최고 명당</option>
+                    <option value="⭐⭐⭐⭐" selected>✨ 우수 명당</option>
+                    <option value="⭐⭐⭐">📍 일반 명당</option>
+                </select>
+                <button class="save-btn" onclick="saveToFirebase(${latlng.lat}, ${latlng.lng}, ${id})">공유하기</button>
+            </div>`;
         L.popup().setLatLng(latlng).setContent(content).openOn(map);
     });
 
@@ -74,7 +138,10 @@
         const name = document.getElementById(`name_${id}`).value;
         const reason = document.getElementById(`reason_${id}`).value;
         const rating = document.getElementById(`rating_${id}`).value;
-        if(name && reason) { database.ref('spots').push({ name, reason, rating, lat, lng, time: new Date().toISOString() }).then(() => map.closePopup()); }
+        if(name && reason) {
+            database.ref('spots').push({ name, reason, rating, lat, lng, time: new Date().toISOString() })
+            .then(() => map.closePopup());
+        }
     };
 </script>
 </body>
